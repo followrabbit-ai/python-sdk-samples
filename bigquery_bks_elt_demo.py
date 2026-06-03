@@ -17,7 +17,15 @@ Configuration is read from environment variables:
   - ``BQ_DATASET``     (defaults to ``airflow_demo``)
   - ``BQ_LOCATION``    (defaults to ``US``)
 
-See ``rabbit_optimizer.py`` for the Rabbit-specific environment variables.
+The optimizer settings are read from environment variables here in the script
+and passed to the client as an ``optimization_config`` dict:
+
+  - ``RABBIT_RESERVATION_IDS``      comma-separated reservation IDs; empty -> skip
+  - ``RABBIT_DEFAULT_PRICING_MODE`` ``on_demand`` (default) or ``slot_based``
+
+The Rabbit API key and base URL are read by the SDK itself from
+``RABBIT_API_KEY`` and ``RABBIT_API_BASE_URL`` (or pass ``api_key=`` /
+``base_url=`` to ``RabbitBigQueryClient``).
 
 Run with::
 
@@ -32,6 +40,23 @@ import os
 from rabbit_optimizer import RabbitBigQueryClient
 
 logging.basicConfig(level=logging.INFO)
+
+
+def _optimization_config() -> dict:
+    """Build the Rabbit optimization config from environment variables."""
+    reservation_ids = [
+        rid.strip()
+        for rid in os.environ.get("RABBIT_RESERVATION_IDS", "").split(",")
+        if rid.strip()
+    ]
+    if not reservation_ids:
+        return {}
+    return {
+        "default_pricing_mode": os.environ.get(
+            "RABBIT_DEFAULT_PRICING_MODE", "on_demand"
+        ),
+        "reservation_ids": reservation_ids,
+    }
 
 
 def main() -> None:
@@ -75,7 +100,9 @@ GROUP BY ride_date
 ORDER BY ride_date
 """
 
-    client = RabbitBigQueryClient(project=project)
+    client = RabbitBigQueryClient(
+        project=project, optimization_config=_optimization_config()
+    )
 
     logging.info("Staging trips into %s", stage_table)
     client.query(stage_sql, location=location).result()
