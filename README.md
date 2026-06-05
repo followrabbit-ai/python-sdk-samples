@@ -74,10 +74,23 @@ plugin applies by patching `BigQueryHook.insert_job`. The full
 
 ## Install
 
+Requires [uv](https://docs.astral.sh/uv/) (macOS, Linux, and Windows). Python 3.12 is pinned in `.python-version`.
+
+```bash
+uv venv .venv
+uv pip install -r requirements.txt
+```
+
+Activate the virtual environment before running the demos: `source .venv/bin/activate` (macOS/Linux) or `.venv\Scripts\Activate.ps1` (Windows PowerShell).
+
+**Alternative** (if you already have Python 3.11+ and prefer not to use uv):
+
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+On Windows, use `.venv\Scripts\Activate.ps1` instead of `source`.
 
 ## Configure
 
