@@ -1,7 +1,6 @@
 """BigQuery ELT sample (Bitcoin Cash) using the Rabbit Python SDK.
 
-Standalone equivalent of the ``bigquery_bch_elt_demo`` Airflow DAG, minus the
-GCS export. Runs a two-step ELT against
+Runs a two-step ELT against
 ``bigquery-public-data.crypto_bitcoin_cash.transactions``:
 
   1. stage     - load a 30-day window into a managed staging table.
@@ -19,7 +18,7 @@ can also be set via an environment variable; a flag takes precedence when both
 are present:
 
   - ``--project``         / ``GCP_PROJECT_ID``              (required)
-  - ``--dataset``         / ``BQ_DATASET``                  (defaults to ``airflow_demo``)
+  - ``--dataset``         / ``BQ_DATASET``                  (defaults to ``rabbit_demo``)
   - ``--location``        / ``BQ_LOCATION``                 (defaults to ``US``)
   - ``--pricing-mode``    / ``RABBIT_DEFAULT_PRICING_MODE`` (``on_demand`` or ``slot_based``)
   - ``--reservation-ids`` / ``RABBIT_RESERVATION_IDS``      (comma-separated; empty -> unoptimized)
@@ -32,6 +31,8 @@ Run with::
     python bigquery_bch_elt_demo.py --project your-project
 
 See ``python bigquery_bch_elt_demo.py --help`` for all options.
+
+A similar pipeline exists as an Airflow DAG in rabbit-sample-dags.
 """
 
 import logging

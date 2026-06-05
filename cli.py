@@ -6,7 +6,7 @@ can also be set via an environment variable; a flag takes precedence when both
 are present:
 
   - ``--project``         / ``GCP_PROJECT_ID``              (required)
-  - ``--dataset``         / ``BQ_DATASET``                  (defaults to ``airflow_demo``)
+  - ``--dataset``         / ``BQ_DATASET``                  (defaults to ``rabbit_demo``)
   - ``--location``        / ``BQ_LOCATION``                 (defaults to ``US``)
   - ``--pricing-mode``    / ``RABBIT_DEFAULT_PRICING_MODE`` (``on_demand`` or ``slot_based``)
   - ``--reservation-ids`` / ``RABBIT_RESERVATION_IDS``      (comma-separated; empty -> unoptimized)
@@ -32,7 +32,7 @@ PROJECT = typer.Option(
     help="GCP project that owns the dataset and runs the jobs.",
 )
 DATASET = typer.Option(
-    "airflow_demo",
+    "rabbit_demo",
     envvar="BQ_DATASET",
     show_envvar=True,
     help="Dataset for the staging and mart tables.",
