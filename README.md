@@ -1,6 +1,6 @@
 # python-sdk-samples
 
-A collection of samples using the Rabbit Dynamic Pricing Python SDK.
+A collection of samples using the [Rabbit Dynamic Pricing Python SDK](https://pypi.org/project/rabbit-bq-job-optimizer/) (`rabbit-bq-job-optimizer`).
 
 ## BigQuery ELT samples
 
@@ -75,6 +75,8 @@ plugin applies by patching `BigQueryHook.insert_job`. The full
 ## Install
 
 Requires [uv](https://docs.astral.sh/uv/) (macOS, Linux, and Windows). Python 3.12 is pinned in `.python-version`.
+
+Dependencies include the [Rabbit BigQuery Job Optimizer client](https://pypi.org/project/rabbit-bq-job-optimizer/) from PyPI (see [requirements.txt](requirements.txt)).
 
 ```bash
 uv venv rabbit-python
