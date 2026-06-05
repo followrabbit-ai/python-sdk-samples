@@ -17,12 +17,12 @@ the Rabbit Dynamic Pricing optimizer.
 
 ### How the optimizer integration works
 
-`rabbit_optimizer.py` provides `RabbitBigQueryClient`, a subclass of
+`rabbit_bigquery_client.py` provides `RabbitBigQueryClient`, a subclass of
 `google.cloud.bigquery.Client` whose `query()` method is a drop-in for
 `bigquery.Client.query`:
 
 ```python
-from rabbit_optimizer import RabbitBigQueryClient
+from rabbit_bigquery_client import RabbitBigQueryClient
 
 client = RabbitBigQueryClient(
     project="your-project",

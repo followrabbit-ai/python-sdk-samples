@@ -47,7 +47,7 @@ from cli import (
     PricingMode,
     build_optimization_config,
 )
-from rabbit_optimizer import RabbitBigQueryClient
+from rabbit_bigquery_client import RabbitBigQueryClient
 
 logging.basicConfig(level=logging.INFO)
 
