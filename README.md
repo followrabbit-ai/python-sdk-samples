@@ -4,16 +4,17 @@ A collection of samples using the [Rabbit Dynamic Pricing Python SDK](https://py
 
 ## BigQuery ELT samples
 
-Standalone Python equivalents of the
-[`rabbit-sample-dags`](https://github.com/followrabbit-ai/rabbit-sample-dags)
-Airflow DAGs, minus the Airflow orchestration and GCS export. Each script runs a
-two-step ELT (stage -> aggregate) and submits every BigQuery query job through
-the Rabbit Dynamic Pricing optimizer.
+Each script runs a two-step ELT (stage -> aggregate) against a public dataset
+and submits every query job through `RabbitBigQueryClient`, routing job
+configuration through the Rabbit Dynamic Pricing optimizer.
 
 | Script | Public dataset | Tables produced |
 | --- | --- | --- |
 | `bigquery_bks_elt_demo.py` | `austin_bikeshare.bikeshare_trips` | `stg_bikeshare_trips`, `mart_daily_rides` |
 | `bigquery_bch_elt_demo.py` | `crypto_bitcoin_cash.transactions` | `stg_bch_transactions`, `mart_daily_bch_transactions` |
+
+Similar pipelines are available as Airflow DAGs in
+[`rabbit-sample-dags`](https://github.com/followrabbit-ai/rabbit-sample-dags).
 
 ### How the optimizer integration works
 
@@ -36,10 +37,10 @@ client.query(sql, location="US").result()
 
 Before submitting, `query()` converts the job configuration to the API
 representation, routes it through `RabbitBQJobOptimizer.optimize_job(...)`, and
-rebuilds the optimized `QueryJobConfig` -- the same flow the upstream Airflow
-plugin applies by patching `BigQueryHook.insert_job`. The full
-`bigquery.Client.query` signature is preserved, so `location`, `job_id`,
-`retry`, and other keyword arguments still work.
+rebuilds the optimized `QueryJobConfig`. The full `bigquery.Client.query`
+signature is preserved, so `location`, `job_id`, `retry`, and other keyword
+arguments still work. This uses the same optimization as the Rabbit Airflow
+integration.
 
 #### Configuration split
 
@@ -58,7 +59,7 @@ plugin applies by patching `BigQueryHook.insert_job`. The full
   Keys: `default_pricing_mode` (`on_demand` default, or `slot_based`) and
   `reservation_ids` (a list). If `reservation_ids` is empty or the optimizer
   call fails, the query still runs -- just with its original, unoptimized
-  configuration (matching the plugin's graceful fallback).
+  configuration (graceful fallback).
 
 ## Prerequisites
 
@@ -67,9 +68,9 @@ plugin applies by patching `BigQueryHook.insert_job`. The full
    gcloud auth application-default login
    ```
 2. A BigQuery dataset in your project to hold the staging and mart tables
-   (defaults to `airflow_demo`):
+   (defaults to `rabbit_demo`):
    ```bash
-   bq --location=US mk --dataset "$GCP_PROJECT_ID:airflow_demo"
+   bq --location=US mk --dataset "$GCP_PROJECT_ID:rabbit_demo"
    ```
 
 ## Install
@@ -104,7 +105,7 @@ precedence when both are present.
 | Option | Env var fallback | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `--project` | `GCP_PROJECT_ID` | yes | -- | Project that owns the dataset and runs the jobs. |
-| `--dataset` | `BQ_DATASET` | no | `airflow_demo` | Dataset for the staging and mart tables. |
+| `--dataset` | `BQ_DATASET` | no | `rabbit_demo` | Dataset for the staging and mart tables. |
 | `--location` | `BQ_LOCATION` | no | `US` | BigQuery location. |
 | `--reservation-ids` | `RABBIT_RESERVATION_IDS` | no | -- | Comma-separated reservation IDs. Empty -> jobs run unoptimized. |
 | `--pricing-mode` | `RABBIT_DEFAULT_PRICING_MODE` | no | `on_demand` | `on_demand` or `slot_based`. |
@@ -117,8 +118,7 @@ The Rabbit API key and base URL are not CLI options. The SDK reads them from
 `base_url=` to `RabbitBigQueryClient`).
 
 Without `RABBIT_API_KEY` and `--reservation-ids`, the queries still run --
-they are simply submitted with their original configuration (matching the
-plugin's graceful fallback).
+they are simply submitted with their original configuration (graceful fallback).
 
 ## Run
 
@@ -129,7 +129,7 @@ python bigquery_bks_elt_demo.py --project your-project
 
 python bigquery_bks_elt_demo.py \
     --project your-project \
-    --dataset airflow_demo \
+    --dataset rabbit_demo \
     --location US \
     --pricing-mode slot_based \
     --reservation-ids your-project:US.your-reservation
@@ -160,5 +160,5 @@ python bigquery_bch_elt_demo.py
 
 ```bash
 bq query --use_legacy_sql=false \
-    "SELECT * FROM \`$GCP_PROJECT_ID.airflow_demo.mart_daily_rides\` ORDER BY ride_date DESC LIMIT 10"
+    "SELECT * FROM \`$GCP_PROJECT_ID.rabbit_demo.mart_daily_rides\` ORDER BY ride_date DESC LIMIT 10"
 ```

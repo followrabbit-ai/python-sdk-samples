@@ -3,8 +3,7 @@
 ``RabbitBigQueryClient`` subclasses :class:`google.cloud.bigquery.Client` and
 overrides :meth:`query` so call sites are byte-for-byte the BigQuery API, but
 every query job is transparently routed through the Rabbit Dynamic Pricing
-optimizer first. This mirrors what the upstream Airflow plugin does by patching
-``BigQueryHook.insert_job``.
+optimizer first.
 
 Configuration is split to match how the SDK works:
 
@@ -20,8 +19,8 @@ Configuration is split to match how the SDK works:
     - ``reservation_ids``: list of reservation IDs (empty -> skip optimization)
 
 If the optimization config is missing/invalid, or the optimizer call fails for
-any reason, the job runs unchanged with its original configuration (the same
-graceful fallback as the plugin).
+any reason, the job runs unchanged with its original configuration (graceful
+fallback). Uses the same optimization path as the Rabbit Airflow integration.
 """
 
 from __future__ import annotations
@@ -112,7 +111,7 @@ class RabbitBigQueryClient(bigquery.Client):
             # of a QueryJobConfig.
             optimized_query.pop("query", None)
             return bigquery.QueryJobConfig.from_api_repr(optimized_query)
-        except Exception as exc:  # noqa: BLE001 - mirror the plugin's broad fallback
+        except Exception as exc:  # noqa: BLE001 - broad fallback on optimization failure
             logger.warning(
                 "Rabbit BQ Optimizer: Optimization failed due to error: %s. "
                 "Proceeding with original job configuration.",
