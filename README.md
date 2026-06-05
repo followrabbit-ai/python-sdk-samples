@@ -81,28 +81,56 @@ pip install -r requirements.txt
 
 ## Configure
 
-The demo scripts read these environment variables:
+The demo scripts take configuration as command-line options. Shared option
+definitions live in `cli.py` and are reused by both scripts. Each option can also
+be set via an environment variable instead; a flag on the command line takes
+precedence when both are present.
 
-| Variable | Required | Default | Read by | Description |
+| Option | Env var fallback | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `GCP_PROJECT_ID` | yes | -- | script | Project that owns the dataset and runs the jobs. |
-| `BQ_DATASET` | no | `airflow_demo` | script | Dataset for the staging and mart tables. |
-| `BQ_LOCATION` | no | `US` | script | BigQuery location. |
-| `RABBIT_RESERVATION_IDS` | no | -- | script | Comma-separated reservation IDs, used to build `optimization_config`. Empty -> jobs run unoptimized. |
-| `RABBIT_DEFAULT_PRICING_MODE` | no | `on_demand` | script | `on_demand` or `slot_based`, used to build `optimization_config`. |
-| `RABBIT_API_KEY` | no | -- | SDK | Rabbit API key. Absent -> jobs run unoptimized. |
-| `RABBIT_API_BASE_URL` | no | SDK default | SDK | Override the Rabbit API base URL. |
+| `--project` | `GCP_PROJECT_ID` | yes | -- | Project that owns the dataset and runs the jobs. |
+| `--dataset` | `BQ_DATASET` | no | `airflow_demo` | Dataset for the staging and mart tables. |
+| `--location` | `BQ_LOCATION` | no | `US` | BigQuery location. |
+| `--reservation-ids` | `RABBIT_RESERVATION_IDS` | no | -- | Comma-separated reservation IDs. Empty -> jobs run unoptimized. |
+| `--pricing-mode` | `RABBIT_DEFAULT_PRICING_MODE` | no | `on_demand` | `on_demand` or `slot_based`. |
 
-The scripts turn `RABBIT_RESERVATION_IDS` / `RABBIT_DEFAULT_PRICING_MODE` into
-the `optimization_config` dict described above. `RABBIT_API_KEY` /
-`RABBIT_API_BASE_URL` are read by the SDK itself (you can instead pass
-`api_key=` / `base_url=` to `RabbitBigQueryClient`).
+The scripts turn `--reservation-ids` and `--pricing-mode` into the
+`optimization_config` dict described above.
 
-Without `RABBIT_API_KEY` and `RABBIT_RESERVATION_IDS`, the queries still run --
+The Rabbit API key and base URL are not CLI options. The SDK reads them from
+`RABBIT_API_KEY` and `RABBIT_API_BASE_URL` (or you can pass `api_key=` /
+`base_url=` to `RabbitBigQueryClient`).
+
+Without `RABBIT_API_KEY` and `--reservation-ids`, the queries still run --
 they are simply submitted with their original configuration (matching the
 plugin's graceful fallback).
 
 ## Run
+
+```bash
+python bigquery_bks_elt_demo.py --help
+
+python bigquery_bks_elt_demo.py --project your-project
+
+python bigquery_bks_elt_demo.py \
+    --project your-project \
+    --dataset airflow_demo \
+    --location US \
+    --pricing-mode slot_based \
+    --reservation-ids your-project:US.your-reservation
+
+python bigquery_bch_elt_demo.py --project your-project
+```
+
+Set the Rabbit API key via environment (not a CLI flag):
+
+```bash
+export RABBIT_API_KEY=your-rabbit-api-key
+python bigquery_bks_elt_demo.py --project your-project --reservation-ids your-project:US.your-reservation
+```
+
+You can also supply the same settings via environment variables and run without
+flags:
 
 ```bash
 export GCP_PROJECT_ID=your-project

@@ -11,59 +11,54 @@ Each query job is submitted through :class:`RabbitBigQueryClient`, whose
 ``query()`` is a drop-in for ``bigquery.Client.query`` that first routes the job
 configuration through the Rabbit Dynamic Pricing optimizer.
 
-Configuration is read from environment variables:
+Configuration is passed as command-line options (see ``cli.py``). Each option
+can also be set via an environment variable; a flag takes precedence when both
+are present:
 
-  - ``GCP_PROJECT_ID`` (required)
-  - ``BQ_DATASET``     (defaults to ``airflow_demo``)
-  - ``BQ_LOCATION``    (defaults to ``US``)
-
-The optimizer settings are read from environment variables here in the script
-and passed to the client as an ``optimization_config`` dict:
-
-  - ``RABBIT_RESERVATION_IDS``      comma-separated reservation IDs; empty -> skip
-  - ``RABBIT_DEFAULT_PRICING_MODE`` ``on_demand`` (default) or ``slot_based``
+  - ``--project``         / ``GCP_PROJECT_ID``              (required)
+  - ``--dataset``         / ``BQ_DATASET``                  (defaults to ``airflow_demo``)
+  - ``--location``        / ``BQ_LOCATION``                 (defaults to ``US``)
+  - ``--pricing-mode``    / ``RABBIT_DEFAULT_PRICING_MODE`` (``on_demand`` or ``slot_based``)
+  - ``--reservation-ids`` / ``RABBIT_RESERVATION_IDS``      (comma-separated; empty -> unoptimized)
 
 The Rabbit API key and base URL are read by the SDK itself from
-``RABBIT_API_KEY`` and ``RABBIT_API_BASE_URL`` (or pass ``api_key=`` /
-``base_url=`` to ``RabbitBigQueryClient``).
+``RABBIT_API_KEY`` and ``RABBIT_API_BASE_URL``.
 
 Run with::
 
-    GCP_PROJECT_ID=your-project python bigquery_bks_elt_demo.py
+    python bigquery_bks_elt_demo.py --project your-project
+
+See ``python bigquery_bks_elt_demo.py --help`` for all options.
 """
 
-from __future__ import annotations
-
 import logging
-import os
 
+import typer
+
+from cli import (
+    DATASET,
+    LOCATION,
+    PRICING_MODE,
+    PROJECT,
+    RESERVATION_IDS,
+    PricingMode,
+    build_optimization_config,
+)
 from rabbit_optimizer import RabbitBigQueryClient
 
 logging.basicConfig(level=logging.INFO)
 
-
-def _optimization_config() -> dict:
-    """Build the Rabbit optimization config from environment variables."""
-    reservation_ids = [
-        rid.strip()
-        for rid in os.environ.get("RABBIT_RESERVATION_IDS", "").split(",")
-        if rid.strip()
-    ]
-    if not reservation_ids:
-        return {}
-    return {
-        "default_pricing_mode": os.environ.get(
-            "RABBIT_DEFAULT_PRICING_MODE", "on_demand"
-        ),
-        "reservation_ids": reservation_ids,
-    }
+app = typer.Typer(add_completion=False)
 
 
-def main() -> None:
-    project = os.environ["GCP_PROJECT_ID"]
-    dataset = os.environ.get("BQ_DATASET", "airflow_demo")
-    location = os.environ.get("BQ_LOCATION", "US")
-
+@app.command()
+def main(
+    project: str = PROJECT,
+    dataset: str = DATASET,
+    location: str = LOCATION,
+    pricing_mode: PricingMode = PRICING_MODE,
+    reservation_ids: str = RESERVATION_IDS,
+) -> None:
     stage_table = f"{project}.{dataset}.stg_bikeshare_trips"
     mart_table = f"{project}.{dataset}.mart_daily_rides"
 
@@ -101,7 +96,8 @@ ORDER BY ride_date
 """
 
     client = RabbitBigQueryClient(
-        project=project, optimization_config=_optimization_config()
+        project=project,
+        optimization_config=build_optimization_config(pricing_mode, reservation_ids),
     )
 
     logging.info("Staging trips into %s", stage_table)
@@ -114,4 +110,4 @@ ORDER BY ride_date
 
 
 if __name__ == "__main__":
-    main()
+    app()
